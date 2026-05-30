@@ -8,7 +8,8 @@ from pydantic import BaseModel
 from backend.app.utils.helpers import measure_time, ensure_directory
 from backend.app.ingestion.ingest_pipeline import ingest_pdf
 from backend.app.retrieval.embedder import embed_texts
-from backend.app.retrieval.qdrant_db import upsert_chunks, get_qdrant_client
+from backend.app.retrieval.faiss_db import upsert_chunks, is_healthy as faiss_is_healthy
+from backend.app.ingestion.ocr import get_tesseract_status, configure_tesseract
 from backend.app.retrieval.retriever import retrieve_candidates
 from backend.app.retrieval.reranker import rerank_chunks
 from backend.app.generation.llm import generate_answer
@@ -17,9 +18,10 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
-# Directories configuration
-RAW_DIR = r"d:\Projects\PDF-Reader-RAG\backend\data\raw_pdfs"
-PROCESSED_DIR = r"d:\Projects\PDF-Reader-RAG\backend\data\processed"
+# Directories configuration (portable paths relative to backend package)
+_BACKEND_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+RAW_DIR = os.path.join(_BACKEND_ROOT, "data", "raw_pdfs")
+PROCESSED_DIR = os.path.join(_BACKEND_ROOT, "data", "processed")
 
 ensure_directory(RAW_DIR)
 ensure_directory(PROCESSED_DIR)
@@ -67,9 +69,9 @@ def run_ingestion_background(job_id: str, filepath: str, filename: str):
         chunk_texts = [c["text"] for c in chunks]
         embeddings = embed_texts(chunk_texts)
         
-        # 3. Save to Qdrant Vector DB (90% - 98%)
+        # 3. Save to FAISS vector store (90% - 98%)
         ingestion_jobs[job_id]["progress"] = 90
-        ingestion_jobs[job_id]["message"] = "Indexing embeddings into Qdrant..."
+        ingestion_jobs[job_id]["message"] = "Indexing embeddings into FAISS..."
         
         upsert_chunks(chunks, embeddings)
         
@@ -243,17 +245,20 @@ async def get_retrieved_chunks(request: QueryRequest):
 @router.get("/api/health")
 async def health_check():
     """
-    Verifies API and Database connectivity.
+    Verifies API, FAISS vector store, and OCR (Tesseract) availability.
     """
-    try:
-        # Check if Qdrant client is alive
-        client = get_qdrant_client()
-        client.get_collections()
+    if faiss_is_healthy():
         db_status = "connected"
-    except Exception as e:
-        db_status = f"disconnected ({str(e)})"
-        
+    else:
+        db_status = "disconnected"
+
+    ocr_status = get_tesseract_status()
+    if not ocr_status["available"]:
+        configure_tesseract()
+        ocr_status = get_tesseract_status()
+
     return {
         "status": "healthy",
-        "vector_db": db_status
+        "vector_db": db_status,
+        "ocr": ocr_status,
     }

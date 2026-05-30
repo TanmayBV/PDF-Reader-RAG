@@ -18,6 +18,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /workspace
+ENV FAISS_STORE_PATH=/workspace/faiss_store
+ENV PYTHONPATH=/workspace
 
 # Install python dependencies
 COPY requirements.txt .
@@ -30,4 +32,4 @@ COPY . .
 EXPOSE 8000
 
 # Launch server
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--app-dir", "/workspace"]

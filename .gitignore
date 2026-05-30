@@ -118,8 +118,8 @@ venv.bak/
 # Project custom ignores
 .env
 backend/.env
-qdrant_db/
-qdrant_test_db/
+faiss_store/
+faiss_test_store/
 
 # Data directories (Prevent committing private PDFs)
 backend/data/raw_pdfs/*

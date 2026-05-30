@@ -20,16 +20,15 @@ if project_root not in sys.path:
 async def run_test():
     logger.info("Starting RAG Chatbot Integration Test...")
     
-    # Set local qdrant database path for testing
-    os.environ["QDRANT_LOCAL_PATH"] = "./qdrant_test_db"
+    os.environ["FAISS_STORE_PATH"] = "./faiss_test_store"
     
     # 1. Warm up embedding & reranker models
-    logger.info("Step 1: Pre-loading BGE embedding and reranking models...")
+    logger.info("Step 1: Pre-loading E5 embedding and reranking models...")
     start = time.perf_counter()
     
     from backend.app.retrieval.embedder import get_embedding_model, embed_texts
     from backend.app.retrieval.reranker import get_reranker_model, rerank_chunks
-    from backend.app.retrieval.qdrant_db import init_collection, upsert_chunks
+    from backend.app.retrieval.faiss_db import init_collection, upsert_chunks
     from backend.app.retrieval.retriever import retrieve_candidates
     from backend.app.generation.llm import generate_answer
     
@@ -87,13 +86,13 @@ async def run_test():
     logger.info(f"Generated {len(chunks)} chunks from mock pages.")
     
     # Embed & Index
-    logger.info("Step 3: Generating BGE embeddings and inserting into local Qdrant DB...")
+    logger.info("Step 3: Generating E5 embeddings and inserting into local FAISS store...")
     start_index = time.perf_counter()
     texts = [c["text"] for c in chunks]
     embeddings = embed_texts(texts)
     upsert_chunks(chunks, embeddings)
     indexing_time = time.perf_counter() - start_index
-    logger.info(f"Successfully indexed chunks in Qdrant in {indexing_time:.2f}s.")
+    logger.info(f"Successfully indexed chunks in FAISS in {indexing_time:.2f}s.")
     
     # 3. Test Query & Retrieval
     query = "How much thrust did the Saturn V first stage produce and what engines did it use?"
@@ -102,7 +101,7 @@ async def run_test():
     start_retrieval = time.perf_counter()
     candidates = retrieve_candidates(query, top_k=5)
     retrieval_time = time.perf_counter() - start_retrieval
-    logger.info(f"Retrieved {len(candidates)} candidates from Qdrant in {retrieval_time*1000:.2f}ms.")
+    logger.info(f"Retrieved {len(candidates)} candidates from FAISS in {retrieval_time*1000:.2f}ms.")
     
     # 4. Test Reranking
     logger.info("Step 5: Reranking candidates using BGE-reranker...")

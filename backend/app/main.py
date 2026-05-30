@@ -23,22 +23,31 @@ async def lifespan(app: FastAPI):
     
     try:
         # Import models and collections inside startup to prevent circular references
-        from backend.app.retrieval.qdrant_db import init_collection
-        from backend.app.retrieval.embedder import get_embedding_model
+        from backend.app.retrieval.faiss_db import init_collection
+        from backend.app.retrieval.embedder import get_embedding_model, MODEL_NAME
         from backend.app.retrieval.reranker import get_reranker_model
+        from backend.app.ingestion.ocr import configure_tesseract
         
-        # 1. Initialize Qdrant database & collections
-        logger.info("RAG Backend: Initializing Qdrant collection...")
+        # 1. Initialize FAISS vector store
+        logger.info("RAG Backend: Initializing FAISS vector store...")
         init_collection()
         
-        # 2. Warm up BGE Embedding model
-        logger.info("RAG Backend: Pre-loading embedding model BAAI/bge-small-en-v1.5...")
+        # 2. Warm up E5 embedding model
+        logger.info("RAG Backend: Pre-loading embedding model %s...", MODEL_NAME)
         get_embedding_model()
         
-        # 3. Warm up BGE Reranker model
+        # 3. Warm up BGE reranker
         logger.info("RAG Backend: Pre-loading reranking model BAAI/bge-reranker-base...")
         get_reranker_model()
-        
+
+        # 4. Locate Tesseract for scanned PDFs
+        if configure_tesseract():
+            logger.info("RAG Backend: Tesseract OCR is available for scanned pages.")
+        else:
+            logger.warning(
+                "RAG Backend: Tesseract not found. Scanned PDFs need TESSERACT_CMD in .env."
+            )
+
         logger.info("RAG Backend: Startup finished. App is ready to receive queries.")
     except Exception as e:
         logger.critical(f"RAG Backend: Startup initialization failed: {e}", exc_info=True)

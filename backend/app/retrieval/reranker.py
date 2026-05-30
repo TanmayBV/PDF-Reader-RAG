@@ -69,7 +69,7 @@ def rerank_chunks(query: str, chunks: List[Dict[str, Any]], top_n: int = 5) -> L
         
     except Exception as e:
         logger.error(f"Reranking failed: {e}", exc_info=True)
-        # Fallback: if reranking fails, return the original top_n chunks from Qdrant directly
+        # Fallback: if reranking fails, return the original top_n chunks from FAISS directly
         # and assign a fallback score
         for chunk in chunks:
             chunk["rerank_score"] = chunk.get("score", 0.0)

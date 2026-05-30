@@ -93,14 +93,15 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # Helper function to perform backend API health check
-def check_backend_health() -> bool:
+def check_backend_health() -> tuple[bool, dict]:
     try:
         r = requests.get(f"{BACKEND_URL}/api/health", timeout=3)
         if r.status_code == 200:
-            return r.json().get("vector_db") == "connected"
+            data = r.json()
+            return data.get("vector_db") == "connected", data
     except Exception:
         pass
-    return False
+    return False, {}
 
 # Initialize Session States
 if "messages" not in st.session_state:
@@ -113,18 +114,27 @@ if "ingesting_jobs" not in st.session_state:
 
 # App Header
 st.title("🧠 AetherRAG Cognitive PDF Search Engine")
-st.caption("Production-grade Retrieval-Augmented Generation using BGE-small embeddings, Qdrant HNSW ANN indices, and Groq LLM.")
+st.caption("RAG with E5-small embeddings, FAISS vector search, BGE reranker, and Groq LLM.")
 
 # Side Bar for Configuration & Document Ingestion
 with st.sidebar:
     st.header("⚙️ Document Control")
     
     # 1. Health Status
-    is_healthy = check_backend_health()
+    is_healthy, health_data = check_backend_health()
     if is_healthy:
-        st.success("🟢 Connected to Qdrant & Backend")
+        st.success("🟢 Connected to Backend & FAISS")
     else:
-        st.error("🔴 Connection Error: Check API/Database")
+        st.error("🔴 Connection Error: Check API / FAISS store")
+
+    ocr = health_data.get("ocr", {})
+    if ocr.get("available"):
+        st.caption(f"OCR: Tesseract {ocr.get('version', 'ready')}")
+    else:
+        st.warning(
+            "OCR unavailable — scanned PDFs need Tesseract. "
+            "Set TESSERACT_CMD in .env (Windows) or install tesseract-ocr."
+        )
         
     st.markdown("---")
     
@@ -375,7 +385,7 @@ with col_telemetry:
                     </div>
                     <div class="chunk-scores">
                         🔍 Vector Cosine Similarity: <b>{score:.4f}</b><br/>
-                        🧬 BGE Rerank Score: <b>{rerank_score:.4f}</b>
+                        🧬 Rerank Score: <b>{rerank_score:.4f}</b>
                     </div>
                     <hr style="margin: 6px 0; border: 0; border-top: 1px solid #2d3139;"/>
                     <div class="chunk-text">"{text}"</div>

@@ -4,13 +4,12 @@ import re
 
 logger = logging.getLogger(__name__)
 
-# Try loading the tokenizer for BAAI/bge-small-en-v1.5
-# If offline or errors, we fall back to a character/word approximation.
+# Tokenizer aligned with intfloat/e5-small-v2 (same family as embedder)
 _tokenizer = None
 try:
     from transformers import AutoTokenizer
-    _tokenizer = AutoTokenizer.from_pretrained("BAAI/bge-small-en-v1.5")
-    logger.info("Successfully loaded BAAI/bge-small-en-v1.5 tokenizer.")
+    _tokenizer = AutoTokenizer.from_pretrained("intfloat/e5-small-v2")
+    logger.info("Successfully loaded intfloat/e5-small-v2 tokenizer.")
 except Exception as e:
     logger.warning(
         f"Could not download/load tokenizer from HuggingFace ({e}). "

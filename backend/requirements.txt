@@ -13,7 +13,7 @@ sentence-transformers
 transformers
 torch
 
-qdrant-client
+faiss-cpu
 
 langchain
 langchain-community

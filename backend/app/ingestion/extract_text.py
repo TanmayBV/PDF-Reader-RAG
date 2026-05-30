@@ -32,11 +32,14 @@ def extract_page_text_native(pdf_path: str) -> List[Dict[str, Any]]:
             page = doc[i]
             page_num = i + 1
             text = page.get_text().strip()
-            
-            # Heuristic: if page text is very short (e.g. less than 150 characters)
-            # but page has content/drawings, it is likely scanned or image-heavy.
-            # We flag it as scanned to run OCR.
-            is_scanned = len(text) < 150
+            image_count = len(page.get_images(full=True))
+            draw_count = len(page.get_drawings()) if hasattr(page, "get_drawings") else 0
+
+            # Scanned/image-heavy page: little selectable text but visual content exists
+            is_scanned = len(text) < 150 and (image_count > 0 or draw_count > 0 or len(text) == 0)
+            # Also OCR pages with almost no text even if image metadata is missing
+            if len(text) < 50:
+                is_scanned = True
             
             results.append({
                 "page_number": page_num,

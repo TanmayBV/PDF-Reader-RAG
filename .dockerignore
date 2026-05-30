@@ -11,8 +11,8 @@ env/
 ENV/
 
 # Databases & local stores
-qdrant_db/
-qdrant_test_db/
+faiss_store/
+faiss_test_store/
 
 # Local uploaded PDFs (mounted via volumes in docker-compose instead)
 backend/data/raw_pdfs/*
