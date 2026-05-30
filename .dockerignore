@@ -1,0 +1,42 @@
+# Byte-compiled files
+**/__pycache__/
+**/*.pyc
+**/*.pyo
+**/*.pyd
+
+# Virtual Environments
+venv/
+.venv/
+env/
+ENV/
+
+# Databases & local stores
+qdrant_db/
+qdrant_test_db/
+
+# Local uploaded PDFs (mounted via volumes in docker-compose instead)
+backend/data/raw_pdfs/*
+backend/data/processed/*
+!backend/data/raw_pdfs/.gitkeep
+!backend/data/processed/.gitkeep
+
+# Project credentials & configs
+.env
+backend/.env
+.git/
+.gitignore
+.dockerignore
+README.md
+walkthrough.md
+task.md
+test_rag.py
+
+# IDE / Editor configurations
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
